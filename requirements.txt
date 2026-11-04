@@ -1,0 +1,15 @@
+# Full development and inference environment (Windows and macOS, CPU).
+-r requirements-ci.txt
+pandas>=2.1
+tqdm>=4.66
+matplotlib>=3.8
+torch>=2.2
+transformers>=4.44
+accelerate>=0.30
+sentencepiece>=0.2
+protobuf>=4.25
+sentence-transformers>=3.0
+faiss-cpu>=1.8
+huggingface_hub>=0.24
+streamlit>=1.36
+requests>=2.31

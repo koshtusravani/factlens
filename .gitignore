@@ -1,0 +1,32 @@
+# Data, indexes, and model artifacts are never committed
+/data/
+/indexes/
+/checkpoints/
+/outputs/
+*.db
+*.faiss
+*.npy
+*.safetensors
+*.bin
+*.pt
+wandb/
+
+# Environments and credentials
+.venv/
+venv/
+.env
+*.key
+.streamlit/secrets.toml
+
+# Python and tooling
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json

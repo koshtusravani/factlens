@@ -1,0 +1,4 @@
+# Normalizes line endings so Windows and macOS commits produce identical diffs
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary

@@ -1,0 +1,43 @@
+# Central configuration. Paths are relative to the repository root.
+paths:
+  data_dir: data
+  fever_train: data/fever/train.jsonl
+  fever_dev: data/fever/shared_task_dev.jsonl # labeled shared-task dev, used as the TEST set
+  wiki_dir: data/wiki-pages
+  wiki_db: indexes/wiki.db
+  splits_dir: splits
+  pairs_dir: data/pairs
+  faiss_dir: indexes/faiss
+  outputs_dir: outputs
+  checkpoints_dir: checkpoints
+
+splits:
+  val_fraction: 0.05
+  seed: 42
+
+retrieval:
+  doc_top_k: 5 # pages kept after document retrieval
+  sent_top_k: 5 # sentences returned (FEVER scoring uses at most 5)
+  use_title_match: true # exact title matching on capitalized n-grams before BM25
+  bm25_title_weight: 2.0
+  bm25_lead_weight: 1.0
+  encoder: sentence-transformers/all-MiniLM-L6-v2
+  encode_batch_size: 64
+
+nei_sampling:
+  strategy: retrieved # retrieved | random
+  num_sentences: 5
+
+model:
+  base: microsoft/deberta-v3-small
+  max_length: 256
+  epochs: 2
+  lr: 2.0e-5
+  batch_size: 32
+  warmup_ratio: 0.06
+  weight_decay: 0.01
+  seed: 42
+  hub_model_id: null # e.g. koshtusravani/factlens-deberta-v3-small
+
+app:
+  model_path: checkpoints/deberta-retrieved # local path or Hugging Face Hub ID

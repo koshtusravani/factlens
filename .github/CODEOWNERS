@@ -1,0 +1,9 @@
+# Both members own everything, so either can approve the other's pull request.
+
+# Area owners, for routing questions only (an author cannot approve their own PR):
+
+# retrieval, data, FAISS -> Trisha
+
+# models, evaluation, app -> Sravani
+
+- @ambatitrisha22 @koshtusravani

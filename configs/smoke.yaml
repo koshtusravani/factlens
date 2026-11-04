@@ -1,0 +1,44 @@
+# Runs the full pipeline on the tiny test fixtures in under a minute on CPU.
+# Used by CI and by teammates to confirm a working setup before touching real data.
+paths:
+  data_dir: outputs/smoke
+  fever_train: tests/fixtures/fever_mini.jsonl
+  fever_dev: tests/fixtures/fever_mini.jsonl
+  wiki_dir: tests/fixtures/wiki_mini.jsonl
+  wiki_db: outputs/smoke/wiki.db
+  splits_dir: outputs/smoke/splits
+  pairs_dir: outputs/smoke/pairs
+  faiss_dir: outputs/smoke/faiss
+  outputs_dir: outputs/smoke
+  checkpoints_dir: outputs/smoke/checkpoints
+
+splits:
+  val_fraction: 0.34
+  seed: 42
+
+retrieval:
+  doc_top_k: 3
+  sent_top_k: 5
+  use_title_match: true
+  bm25_title_weight: 2.0
+  bm25_lead_weight: 1.0
+  encoder: sentence-transformers/all-MiniLM-L6-v2
+  encode_batch_size: 64
+
+nei_sampling:
+  strategy: retrieved
+  num_sentences: 5
+
+model:
+  base: microsoft/deberta-v3-small
+  max_length: 128
+  epochs: 1
+  lr: 2.0e-5
+  batch_size: 8
+  warmup_ratio: 0.0
+  weight_decay: 0.0
+  seed: 42
+  hub_model_id: null
+
+app:
+  model_path: checkpoints/deberta-retrieved

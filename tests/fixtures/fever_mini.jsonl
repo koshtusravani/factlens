@@ -1,0 +1,9 @@
+{"id": 1, "verifiable": "VERIFIABLE", "label": "SUPPORTS", "claim": "The Eiffel Tower is in Paris.", "evidence": [[[100, 200, "Eiffel_Tower", 0]], [[101, 200, "Eiffel_Tower", 0]]]}
+{"id": 2, "verifiable": "VERIFIABLE", "label": "SUPPORTS", "claim": "Barack Obama was born in Hawaii.", "evidence": [[[100, 200, "Barack_Obama", 1]], [[101, 200, "Barack_Obama", 1], [101, 201, "Hawaii", 1]]]}
+{"id": 3, "verifiable": "VERIFIABLE", "label": "SUPPORTS", "claim": "Gustave Eiffel was a French engineer.", "evidence": [[[100, 200, "Gustave_Eiffel", 0]]]}
+{"id": 4, "verifiable": "VERIFIABLE", "label": "REFUTES", "claim": "The Eiffel Tower was completed in 1887.", "evidence": [[[100, 200, "Eiffel_Tower", 2]]]}
+{"id": 5, "verifiable": "VERIFIABLE", "label": "REFUTES", "claim": "The Great Wall of China is visible from the Moon.", "evidence": [[[100, 200, "Great_Wall_of_China", 1]]]}
+{"id": 6, "verifiable": "VERIFIABLE", "label": "REFUTES", "claim": "Paris is not the capital of France.", "evidence": [[[100, 200, "Paris", 0]]]}
+{"id": 7, "verifiable": "NOT VERIFIABLE", "label": "NOT ENOUGH INFO", "claim": "Gustave Eiffel liked opera.", "evidence": [[[300, null, null, null]]]}
+{"id": 8, "verifiable": "NOT VERIFIABLE", "label": "NOT ENOUGH INFO", "claim": "Barack Obama owns a red bicycle.", "evidence": [[[300, null, null, null]]]}
+{"id": 9, "verifiable": "NOT VERIFIABLE", "label": "NOT ENOUGH INFO", "claim": "The Eiffel Tower film won an award.", "evidence": [[[300, null, null, null]]]}

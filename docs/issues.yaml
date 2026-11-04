@@ -1,0 +1,176 @@
+# Source of truth for the project board. scripts/setup_github.py creates labels,
+# milestones, and every issue below with the GitHub CLI.
+
+milestones:
+  - { title: "v0.1.0 Data and baselines", due: "2026-11-10" }
+  - { title: "v0.2.0 Fine-tuned verifier", due: "2026-11-17" }
+  - { title: "v0.3.0 Integrated application", due: "2026-11-24" }
+  - { title: "v1.0.0 Final release", due: "2026-12-01" }
+
+labels:
+  - { name: retrieval, color: "1d76db" }
+  - { name: model, color: "5319e7" }
+  - { name: evaluation, color: "0e8a16" }
+  - { name: app, color: "fbca04" }
+  - { name: infra, color: "c5def5" }
+  - { name: docs, color: "bfdadc" }
+  - { name: experiment, color: "d93f0b" }
+  - { name: task, color: "ededed" }
+
+issues:
+  - title: "Repo setup, branch protection, CI green on Windows, macOS, Linux"
+    owner: Sravani
+    milestone: "v0.1.0 Data and baselines"
+    labels: [infra]
+    due: "2026-11-04"
+    criteria:
+      - Foundation pushed to main; main protected (PR required, 1 approval, CI must pass)
+      - Both members cloned, created a venv, and ran pytest locally
+  - title: "Retrieval core: SQLite store, title match plus BM25, dense ranking, NEI sampling"
+    owner: Trisha
+    milestone: "v0.1.0 Data and baselines"
+    labels: [retrieval]
+    due: "2026-11-04"
+    criteria:
+      - PR feature/retrieval-core merged with tests/test_retrieval.py passing in CI
+  - title: "Models core: pairs, baselines, training, metrics, FEVER score"
+    owner: Sravani
+    milestone: "v0.1.0 Data and baselines"
+    labels: [model, evaluation]
+    due: "2026-11-05"
+    criteria:
+      - PR feature/models-core merged with test_metrics.py and test_models.py passing
+  - title: "Download FEVER and build the SQLite Wikipedia store"
+    owner: Trisha
+    milestone: "v0.1.0 Data and baselines"
+    labels: [retrieval]
+    due: "2026-11-06"
+    criteria:
+      - indexes/wiki.db built and shared with Sravani (Drive link in the issue, never in git)
+      - Page count and DB size recorded in docs/data_notes.md
+  - title: "Commit fixed validation split"
+    owner: Sravani
+    milestone: "v0.1.0 Data and baselines"
+    labels: [task]
+    due: "2026-11-05"
+    criteria:
+      - splits/val_ids.txt committed (5%, stratified, seed 42)
+  - title: "Document retrieval evaluation with title-match ablation"
+    owner: Trisha
+    milestone: "v0.1.0 Data and baselines"
+    labels: [retrieval, experiment]
+    due: "2026-11-08"
+    criteria:
+      - doc_recall@1/3/5 and sent_recall@5 on val 2000, with and without title match
+  - title: "Gold-evidence pairs with NEI sampling (retrieved and random)"
+    owner: Sravani
+    milestone: "v0.1.0 Data and baselines"
+    labels: [model]
+    due: "2026-11-08"
+    criteria:
+      - Gold pairs for train, val, test (nei-retrieved); train also with nei-random
+  - title: "Retrieved-evidence pairs for val and test (BM25)"
+    owner: Trisha
+    milestone: "v0.1.0 Data and baselines"
+    labels: [retrieval]
+    due: "2026-11-09"
+    criteria:
+      - retrieved_val_bm25.jsonl and retrieved_test_bm25.jsonl shared
+  - title: "TF-IDF and Logistic Regression baselines (E1 to E3)"
+    owner: Sravani
+    milestone: "v0.1.0 Data and baselines"
+    labels: [model, experiment]
+    due: "2026-11-10"
+    criteria:
+      - E1, E2, E3 filled in docs/experiments.md; release v0.1.0 tagged
+  - title: "Dense and hybrid sentence ranking comparison"
+    owner: Trisha
+    milestone: "v0.2.0 Fine-tuned verifier"
+    labels: [retrieval, experiment]
+    due: "2026-11-14"
+    criteria:
+      - bm25 vs dense vs hybrid on val 2000; best mode set in configs/default.yaml
+  - title: "Retrieved pairs for train and test with the chosen mode"
+    owner: Trisha
+    milestone: "v0.2.0 Fine-tuned verifier"
+    labels: [retrieval]
+    due: "2026-11-16"
+    criteria:
+      - Retrieved train and test pair files for the chosen mode shared
+  - title: "Kaggle training setup and first DeBERTa run"
+    owner: Sravani
+    milestone: "v0.2.0 Fine-tuned verifier"
+    labels: [model, infra]
+    due: "2026-11-12"
+    criteria:
+      - 30k subsample run completes; val macro F1 logged
+  - title: "DeBERTa claim-only (E4) and gold-evidence (E5, E6) runs"
+    owner: Sravani
+    milestone: "v0.2.0 Fine-tuned verifier"
+    labels: [model, experiment]
+    due: "2026-11-17"
+    criteria:
+      - Models on the Hugging Face Hub; E5 and E6 with FEVER score; release v0.2.0 tagged
+  - title: "FAISS dense-only retrieval on subcorpus (R4)"
+    owner: Trisha
+    milestone: "v0.3.0 Integrated application"
+    labels: [retrieval, experiment]
+    due: "2026-11-21"
+    criteria:
+      - Compared with the two-stage retriever on the same val 2000 claims
+  - title: "Train on retrieved evidence (E7) and MNLI initialization ablation (E8)"
+    owner: Sravani
+    milestone: "v0.3.0 Integrated application"
+    labels: [model, experiment]
+    due: "2026-11-21"
+    criteria:
+      - E8 starts from cross-encoder/nli-deberta-v3-small, not a FEVER-NLI checkpoint
+  - title: "Streamlit app integrated with retriever and Hub model"
+    owner: Sravani
+    milestone: "v0.3.0 Integrated application"
+    labels: [app]
+    due: "2026-11-23"
+    criteria:
+      - App runs on both laptops on CPU; Trisha reviews and tests on her machine
+  - title: "Retrieval error analysis"
+    owner: Trisha
+    milestone: "v0.3.0 Integrated application"
+    labels: [retrieval, evaluation]
+    due: "2026-11-24"
+    criteria:
+      - 50 test misses categorized; release v0.3.0 tagged
+  - title: "Model error analysis and Symmetric FEVER (E9)"
+    owner: Sravani
+    milestone: "v1.0.0 Final release"
+    labels: [evaluation, experiment]
+    due: "2026-11-25"
+    criteria:
+      - Error buckets for the best model; 30 examples annotated; E9 if time allows
+  - title: "Results table, figures, README results section"
+    owner: Trisha
+    milestone: "v1.0.0 Final release"
+    labels: [docs]
+    due: "2026-11-28"
+    criteria:
+      - Results table in README; confusion matrix figure for the best model
+  - title: "Final report"
+    owner: Sravani
+    milestone: "v1.0.0 Final release"
+    labels: [docs]
+    due: "2026-11-29"
+    criteria:
+      - Both members wrote their own sections and reviewed the other's
+  - title: "Presentation and recorded backup demo"
+    owner: Trisha
+    milestone: "v1.0.0 Final release"
+    labels: [docs, app]
+    due: "2026-11-30"
+    criteria:
+      - Slides done; two-minute screen recording of the app
+  - title: "v1.0.0 release and submission"
+    owner: Sravani
+    milestone: "v1.0.0 Final release"
+    labels: [infra]
+    due: "2026-12-01"
+    criteria:
+      - Fresh clone reproduces the tests and loads the Hub model
