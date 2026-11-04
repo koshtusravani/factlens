@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -30,7 +31,13 @@ def _parse_evidence(raw_evidence) -> list[list[EvidenceKey]]:
     sets: list[list[EvidenceKey]] = []
     seen: set[tuple[EvidenceKey, ...]] = set()
     for annotation in raw_evidence or []:
-        items = [(e[2], int(e[3])) for e in annotation if e[2] is not None and e[3] is not None]
+        # claim files spell accents as separate marks (NFD) but the wiki dump uses NFC,
+        # so "Björk" would not match without this
+        items = [
+            (unicodedata.normalize("NFC", e[2]), int(e[3]))
+            for e in annotation
+            if e[2] is not None and e[3] is not None
+        ]
         key = tuple(sorted(set(items)))
         if items and key not in seen:
             seen.add(key)

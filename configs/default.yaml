@@ -23,6 +23,9 @@ retrieval:
   bm25_lead_weight: 1.0
   encoder: sentence-transformers/all-MiniLM-L6-v2
   encode_batch_size: 64
+  sent_ranker: bm25 # bm25 | dense | hybrid, pick the best on Nov 14
+  hybrid_alpha: 0.5 # weight on dense in hybrid mode
+  lead_sentences: 5 # sentences per page in the BM25 index
 
 nei_sampling:
   strategy: retrieved # retrieved | random
