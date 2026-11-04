@@ -13,7 +13,7 @@ import numpy as np
 
 from factlens.data.wiki import format_evidence
 from factlens.retrieval.bm25 import BM25
-from factlens.retrieval.store import WikiStore
+from factlens.retrieval.store import WikiStore, nfc
 from factlens.retrieval.text import is_disambiguated, title_candidates, tokenize
 
 SENT_RANKERS = ("bm25", "dense", "hybrid")
@@ -103,7 +103,7 @@ class Retriever:
         shorter pieces are skipped (so no "Barack" page after "Barack Obama")."""
         taken: set[int] = set()
         found: list[str] = []
-        for start, end, key in title_candidates(claim):
+        for start, end, key in title_candidates(nfc(claim)):
             if taken.intersection(range(start, end)):
                 continue
             pages = self.store.pages_by_title_key(key)
@@ -180,5 +180,6 @@ class Retriever:
         return out
 
     def retrieve(self, claim: str) -> RetrievalResult:
+        claim = nfc(claim)
         pages = self.retrieve_pages(claim)
         return RetrievalResult(pages=pages, sentences=self.rank_sentences(claim, pages))

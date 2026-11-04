@@ -4,6 +4,7 @@ import json
 import random
 import re
 import shutil
+import unicodedata
 import zlib
 from pathlib import Path
 
@@ -97,17 +98,40 @@ def test_build_from_folder_skips_mac_junk(tmp_path):
     shutil.copy(FIXTURES / "wiki_mini.jsonl", src / "wiki-001.jsonl")
     (src / "._wiki-001.jsonl").write_bytes(b"\x00\x05\x16\x07junk")
     stats = build_wiki_db(src, tmp_path / "wiki.db")
-    assert stats == {"pages": 8, "sentences": 17}
+    assert stats == {"pages": 8, "sentences": 17, "dropped_lines": 0}
     assert not (tmp_path / "wiki.db.tmp").exists()
 
 
 def test_stray_numbered_lines_are_dropped(tmp_path):
     # shaped like the real Duluth_Kelleys/Eskimos page
     lines = "0\tFirst .\n1927\t1927 in sports\n1\tSecond .\n1927\t1927 in sports\n2\t"
-    assert drop_stray_lines(lines) == "0\tFirst .\n1\tSecond .\n2\t"
+    assert drop_stray_lines(lines) == ("0\tFirst .\n1\tSecond .\n2\t", 2)
     src = tmp_path / "wiki.jsonl"
     src.write_text(json.dumps({"id": "Team", "text": "", "lines": lines}) + "\n")
-    assert build_wiki_db(src, tmp_path / "wiki.db") == {"pages": 1, "sentences": 2}
+    assert build_wiki_db(src, tmp_path / "wiki.db") == {
+        "pages": 1,
+        "sentences": 2,
+        "dropped_lines": 2,
+    }
+
+
+def test_accented_ids_match_in_either_form(tmp_path):
+    nfc_id, nfd_id = "Björk", unicodedata.normalize("NFD", "Björk")
+    assert nfc_id != nfd_id
+    lines = "0\tBjörk is an Icelandic singer .\n1\tShe was born in Reykjavík ."
+    src = tmp_path / "wiki.jsonl"
+    # write the page id in NFD, the build stores it as NFC
+    src.write_text(json.dumps({"id": nfd_id, "text": "", "lines": lines}) + "\n", encoding="utf-8")
+    db = tmp_path / "wiki.db"
+    build_wiki_db(src, db)
+    with WikiStore(db) as s:
+        for pid in (nfc_id, nfd_id):
+            assert s.sentence(pid, 1) == "She was born in Reykjavík."
+            assert len(s.sentences(pid)) == 2
+        r = Retriever(s, doc_top_k=1)
+        claim_nfd = unicodedata.normalize("NFD", "Björk is a singer.")
+        assert r.title_matches(claim_nfd) == [nfc_id]
+        assert r.retrieve(claim_nfd).sentences[0].page_id == nfc_id
 
 
 def test_store_lookups(store):

@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 import random
 import sqlite3
+import unicodedata
 from pathlib import Path
 
 from factlens.data.wiki import parse_lines, title_to_text
@@ -41,26 +42,38 @@ def wiki_files(source: str | Path) -> list[Path]:
     return files
 
 
-def drop_stray_lines(lines_field: str) -> str:
-    """Keeps only entries numbered 0, 1, 2, ... in order.
+def nfc(page_id: str) -> str:
+    """One Unicode form for page ids. Claim files use NFD for accents, the dump uses NFC."""
+    return unicodedata.normalize("NFC", page_id)
+
+
+def drop_stray_lines(lines_field: str) -> tuple[str, int]:
+    """Keeps only entries numbered 0, 1, 2, ... in order. Returns the kept field and how
+    many numbered entries were dropped.
 
     One page in the dump (Duluth_Kelleys/Eskimos) has link text on its own line that looks
     like a sentence ("1927<tab>1927 in sports"), which would clash with the real numbering.
+    A real gap in numbering would also drop the rest of the page, so the build reports the
+    count instead of hiding it.
     """
-    keep, expected = [], 0
+    keep, expected, dropped = [], 0, 0
     for raw in lines_field.split("\n"):
         num = raw.split("\t", 1)[0]
-        if num.isdigit() and int(num) == expected:
+        if not num.isdigit():
+            continue
+        if int(num) == expected:
             keep.append(raw)
             expected += 1
-    return "\n".join(keep)
+        else:
+            dropped += 1
+    return "\n".join(keep), dropped
 
 
 def build_wiki_db(
     source: str | Path, db_path: str | Path, lead_sentences: int = 5, batch_size: int = 20000
 ) -> dict[str, int]:
     """Builds wiki.db from the dump. Writes to a temp file first, so a crash never leaves
-    a half-built database behind. Returns page and sentence counts."""
+    a half-built database behind. Returns page, sentence, and dropped line counts."""
     db_path = Path(db_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
     tmp = db_path.with_name(db_path.name + ".tmp")
@@ -70,7 +83,7 @@ def build_wiki_db(
     con.executescript("PRAGMA journal_mode=OFF; PRAGMA synchronous=OFF; PRAGMA temp_store=MEMORY;")
     con.executescript(SCHEMA)
 
-    n_pages = n_sents = 0
+    n_pages = n_sents = n_dropped = 0
     sent_rows, doc_rows = [], []
 
     def flush():
@@ -83,10 +96,12 @@ def build_wiki_db(
 
     for path in wiki_files(source):
         for row in read_jsonl(path):
-            page_id = row.get("id") or ""
+            page_id = nfc(row.get("id") or "")
             if not page_id:  # the dump starts with one empty page
                 continue
-            lines = parse_lines(drop_stray_lines(row.get("lines", "")))
+            kept, dropped = drop_stray_lines(row.get("lines", ""))
+            n_dropped += dropped
+            lines = parse_lines(kept)
             if not lines:
                 continue
             title = title_to_text(page_id)
@@ -113,7 +128,7 @@ def build_wiki_db(
     con.execute("ANALYZE")
     con.close()
     os.replace(tmp, db_path)
-    return {"pages": n_pages, "sentences": n_sents}
+    return {"pages": n_pages, "sentences": n_sents, "dropped_lines": n_dropped}
 
 
 class WikiStore:
@@ -177,23 +192,24 @@ class WikiStore:
         rows = self.con.execute(
             "SELECT page_id, bm25(docs, 0.0, ?, ?) FROM docs WHERE docs MATCH ? "
             f"AND rowid IN (SELECT rowid FROM pages WHERE id IN ({marks}))",
-            (title_weight, lead_weight, query, *page_ids),
+            (title_weight, lead_weight, query, *map(nfc, page_ids)),
         ).fetchall()
         return {pid: -s for pid, s in rows}
 
     def pages_by_title_key(self, key: str) -> list[str]:
         """Pages whose title matches the key. The plain title comes before "(film)" etc."""
-        ids = [r[0] for r in self.con.execute("SELECT id FROM pages WHERE title_key = ?", (key,))]
+        rows = self.con.execute("SELECT id FROM pages WHERE title_key = ?", (nfc(key),))
+        ids = [r[0] for r in rows]
         return sorted(ids, key=lambda pid: (is_disambiguated(pid), pid))
 
     def sentences(self, page_id: str) -> list[tuple[int, str]]:
         return self.con.execute(
-            "SELECT line, text FROM sentences WHERE page_id = ? ORDER BY line", (page_id,)
+            "SELECT line, text FROM sentences WHERE page_id = ? ORDER BY line", (nfc(page_id),)
         ).fetchall()
 
     def sentence(self, page_id: str, line: int) -> str | None:
         row = self.con.execute(
-            "SELECT text FROM sentences WHERE page_id = ? AND line = ?", (page_id, line)
+            "SELECT text FROM sentences WHERE page_id = ? AND line = ?", (nfc(page_id), line)
         ).fetchone()
         return row[0] if row else None
 
