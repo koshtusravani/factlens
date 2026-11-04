@@ -1,6 +1,9 @@
 """Unit tests for Wikipedia normalization, FEVER loading, and split generation."""
 
-from factlens.data.fever import gold_evidence_keys
+import json
+import unicodedata
+
+from factlens.data.fever import gold_evidence_keys, load_claims
 from factlens.data.splits import apply_split, stratified_val_ids
 from factlens.data.wiki import format_evidence, normalize_text, parse_lines, title_to_text
 from factlens.labels import NEI
@@ -47,3 +50,11 @@ def test_stratified_split_is_deterministic_and_balanced(claims):
     labels = {c.label for c in apply_split(claims, a)}
     assert len(labels) == 3  # One claim per class
     assert len(apply_split(claims, a, exclude=True)) == 6
+
+def test_evidence_page_ids_are_nfc(tmp_path):
+    # the claim files use NFD for accents, the wiki dump uses NFC
+    nfd = unicodedata.normalize("NFD", "Björk")
+    row = {"id": 1, "label": "SUPPORTS", "claim": "x", "evidence": [[[0, 0, nfd, 1]]]}
+    path = tmp_path / "c.jsonl"
+    path.write_text(json.dumps(row) + "\n", encoding="utf-8")
+    assert load_claims(path)[0].evidence_sets == [[("Björk", 1)]]

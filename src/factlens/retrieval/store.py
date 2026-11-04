@@ -41,6 +41,21 @@ def wiki_files(source: str | Path) -> list[Path]:
     return files
 
 
+def drop_stray_lines(lines_field: str) -> str:
+    """Keeps only entries numbered 0, 1, 2, ... in order.
+
+    One page in the dump (Duluth_Kelleys/Eskimos) has link text on its own line that looks
+    like a sentence ("1927<tab>1927 in sports"), which would clash with the real numbering.
+    """
+    keep, expected = [], 0
+    for raw in lines_field.split("\n"):
+        num = raw.split("\t", 1)[0]
+        if num.isdigit() and int(num) == expected:
+            keep.append(raw)
+            expected += 1
+    return "\n".join(keep)
+
+
 def build_wiki_db(
     source: str | Path, db_path: str | Path, lead_sentences: int = 5, batch_size: int = 20000
 ) -> dict[str, int]:
@@ -71,7 +86,7 @@ def build_wiki_db(
             page_id = row.get("id") or ""
             if not page_id:  # the dump starts with one empty page
                 continue
-            lines = parse_lines(row.get("lines", ""))
+            lines = parse_lines(drop_stray_lines(row.get("lines", "")))
             if not lines:
                 continue
             title = title_to_text(page_id)

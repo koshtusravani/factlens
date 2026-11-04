@@ -1,5 +1,6 @@
 """Tests for the retrieval package, run on the tiny fixture dump. No model downloads."""
 
+import json
 import random
 import re
 import shutil
@@ -19,6 +20,7 @@ from factlens.retrieval import (
     sent_recall_at_k,
 )
 from factlens.retrieval.bm25 import BM25
+from factlens.retrieval.store import drop_stray_lines
 from factlens.retrieval.text import title_candidates, title_key, tokenize
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -97,6 +99,15 @@ def test_build_from_folder_skips_mac_junk(tmp_path):
     stats = build_wiki_db(src, tmp_path / "wiki.db")
     assert stats == {"pages": 8, "sentences": 17}
     assert not (tmp_path / "wiki.db.tmp").exists()
+
+
+def test_stray_numbered_lines_are_dropped(tmp_path):
+    # shaped like the real Duluth_Kelleys/Eskimos page
+    lines = "0\tFirst .\n1927\t1927 in sports\n1\tSecond .\n1927\t1927 in sports\n2\t"
+    assert drop_stray_lines(lines) == "0\tFirst .\n1\tSecond .\n2\t"
+    src = tmp_path / "wiki.jsonl"
+    src.write_text(json.dumps({"id": "Team", "text": "", "lines": lines}) + "\n")
+    assert build_wiki_db(src, tmp_path / "wiki.db") == {"pages": 1, "sentences": 2}
 
 
 def test_store_lookups(store):
