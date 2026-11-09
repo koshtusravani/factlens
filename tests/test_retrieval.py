@@ -21,6 +21,7 @@ from factlens.retrieval import (
     sent_recall_at_k,
 )
 from factlens.retrieval.bm25 import BM25
+from factlens.retrieval.pairs import pair_row, run_name
 from factlens.retrieval.store import drop_stray_lines
 from factlens.retrieval.text import title_candidates, title_key, tokenize
 
@@ -275,3 +276,27 @@ def test_recall_ignores_nei(claims):
     assert doc_recall_at_k(nei, [[] for _ in nei], k=5) == 0.0
     mixed = [c for c in claims if c.id in (1, 7)]
     assert doc_recall_at_k(mixed, [["Eiffel_Tower"], []], k=5) == 1.0
+
+
+# pair files
+
+
+def test_pair_row_format(retriever, claims):
+    c = next(c for c in claims if c.id == 2)
+    res = retriever.retrieve(c.claim)
+    row = pair_row(c, res)
+    assert set(row) == {"id", "claim", "label", "evidence", "evidence_source", "retrieved_pages"}
+    assert row["id"] == c.id and row["label"] == c.label
+    assert row["evidence_source"] == "retrieved"
+    assert row["retrieved_pages"] == res.pages
+    page_id, line, text = row["evidence"][0]
+    assert (page_id, line) == res.sentences[0].key
+    assert text == res.sentences[0].text
+    json.dumps(row)
+
+
+def test_run_name():
+    assert run_name("bm25") == "bm25"
+    assert run_name("bm25", use_title_match=False) == "bm25_notitle"
+    assert run_name("hybrid", limit=2000) == "hybrid_n2000"
+    assert run_name("bm25", False, 2000) == "bm25_notitle_n2000"
