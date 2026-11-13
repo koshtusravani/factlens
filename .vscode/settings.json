@@ -3,6 +3,7 @@
   "python.testing.pytestArgs": ["tests"],
   "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
   "editor.formatOnSave": true,
+  "files.insertFinalNewline": true,
   "[python]": { "editor.defaultFormatter": "charliermarsh.ruff" },
   "files.eol": "\n"
 }
