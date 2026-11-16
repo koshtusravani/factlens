@@ -175,6 +175,37 @@ def test_title_match_always_kept(store):
     assert r.retrieve_pages("Hawaii is a state.") == ["Hawaii"]
 
 
+def test_name_with_only_parenthetical_pages_keeps_a_slot(tmp_path):
+    # issue #28: "Dan Martin" only has "(...)" pages, and topic pages used to push them all out
+    def page(pid, lead):
+        return json.dumps({"id": pid, "text": "", "lines": f"0\t{lead}"}) + "\n"
+
+    rows = [
+        page("Dan_Martin_-LRB-cyclist-RRB-", "Dan Martin is an Irish road racing cyclist ."),
+        page("Dan_Martin_-LRB-actor-RRB-", "Dan Martin is a British actor ."),
+        page("Dan_Martin_-LRB-disambiguation-RRB-", "Dan Martin may refer to people ."),
+        page("BMX", "BMX is a cycle sport ."),
+    ]
+    # topic pages that match every word of the claim, so they outscore the Dan_Martin pages
+    lead = "Dan Martin and other professional BMX bikers ride BMX bikes ."
+    rows += [page(f"Pro_BMX_biker_{i}", lead) for i in range(5)]
+    src = tmp_path / "wiki.jsonl"
+    src.write_text("".join(rows))
+    build_wiki_db(src, tmp_path / "wiki.db")
+    with WikiStore(tmp_path / "wiki.db") as s:
+        claim = "Dan Martin is a professional BMX biker."
+        r = Retriever(s, doc_top_k=5)
+        assert len(r.title_match_groups(claim)) == 2  # Dan Martin, BMX
+        pages = r.retrieve_pages(claim)
+        assert "BMX" in pages
+        assert any(p.startswith("Dan_Martin") for p in pages)
+        # with one slot, the longer name wins it, and never with the disambiguation page
+        assert Retriever(s, doc_top_k=1).retrieve_pages(claim)[0] in {
+            "Dan_Martin_-LRB-cyclist-RRB-",
+            "Dan_Martin_-LRB-actor-RRB-",
+        }
+
+
 def test_punctuation_titles_never_match():
     assert title_key(".abc") == "" and title_key("ABC") == "abc"
 
