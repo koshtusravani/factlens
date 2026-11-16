@@ -17,6 +17,7 @@ from factlens.retrieval.store import WikiStore, nfc
 from factlens.retrieval.text import is_disambiguated, title_candidates, tokenize
 
 SENT_RANKERS = ("bm25", "dense", "hybrid")
+DISAMBIG_PAGE = "-LRB-disambiguation-RRB-"
 
 # takes a list of texts, returns one L2-normalized vector per text
 Encoder = Callable[[list[str]], np.ndarray]
@@ -56,6 +57,7 @@ class Retriever:
         doc_top_k: int = 5,
         sent_top_k: int = 5,
         use_title_match: bool = True,
+        title_slots: int = 3,
         title_weight: float = 2.0,
         lead_weight: float = 1.0,
         sent_ranker: str = "bm25",
@@ -70,6 +72,7 @@ class Retriever:
         self.doc_top_k = doc_top_k
         self.sent_top_k = sent_top_k
         self.use_title_match = use_title_match
+        self.title_slots = title_slots
         self.title_weight = title_weight
         self.lead_weight = lead_weight
         self.sent_ranker = sent_ranker
@@ -86,6 +89,7 @@ class Retriever:
             doc_top_k=r["doc_top_k"],
             sent_top_k=r["sent_top_k"],
             use_title_match=r["use_title_match"],
+            title_slots=r.get("title_slots", 3),
             title_weight=r["bm25_title_weight"],
             lead_weight=r["bm25_lead_weight"],
             sent_ranker=r.get("sent_ranker", "bm25"),
@@ -98,19 +102,36 @@ class Retriever:
 
     # stage 1: pages
 
-    def title_matches(self, claim: str) -> list[str]:
-        """Pages whose title appears in the claim. Once a long name matches, its
-        shorter pieces are skipped (so no "Barack" page after "Barack Obama")."""
+    def title_match_groups(self, claim: str) -> list[list[str]]:
+        """Pages whose title appears in the claim, one group per matched name, longest
+        name first. Once a long name matches, its shorter pieces are skipped (so no
+        "Barack" page after "Barack Obama")."""
         taken: set[int] = set()
-        found: list[str] = []
+        seen: set[str] = set()
+        groups: list[list[str]] = []
         for start, end, key in title_candidates(nfc(claim)):
             if taken.intersection(range(start, end)):
                 continue
             pages = self.store.pages_by_title_key(key)
             if pages:
                 taken.update(range(start, end))
-                found.extend(p for p in pages if p not in found)
-        return found
+                new = [p for p in pages if p not in seen]
+                if new:
+                    seen.update(new)
+                    groups.append(new)
+        return groups
+
+    def title_matches(self, claim: str) -> list[str]:
+        return [p for g in self.title_match_groups(claim) for p in g]
+
+    @staticmethod
+    def _entity_page(pages: list[str], scores: dict[str, float]) -> str:
+        # plain page if there is one, else the best-scoring "(...)" page,
+        # never a "(disambiguation)" list page unless that's all there is
+        plain = [p for p in pages if not is_disambiguated(p)]
+        if plain:
+            return plain[0]
+        return max(pages, key=lambda p: (not p.endswith(DISAMBIG_PAGE), scores.get(p, 0)))
 
     def retrieve_pages(self, claim: str, k: int | None = None) -> list[str]:
         k = k or self.doc_top_k
@@ -119,7 +140,8 @@ class Retriever:
         if not self.use_title_match:
             return [p for p, _ in hits[:k]]
 
-        matched = self.title_matches(claim)
+        groups = self.title_match_groups(claim)
+        matched = [p for g in groups for p in g]
         scores = dict(hits)
         scores.update(
             self.store.score_pages(claim, [p for p in matched if p not in scores], **weights)
@@ -128,9 +150,10 @@ class Retriever:
             dict.fromkeys([p for p, _ in hits] + matched), key=lambda p: -scores.get(p, 0)
         )
 
-        # exact title matches always get a slot, but the final order is by BM25 score,
+        # each matched name gets a slot (longest names first), even when it only has
+        # "(...)" pages like Dan_Martin_(cyclist). The final order is by BM25 score,
         # so "ABC" (the TV network) doesn't push "ABC islands" down
-        must = [p for p in matched if not is_disambiguated(p)][:k]
+        must = [self._entity_page(g, scores) for g in groups][: min(self.title_slots, k)]
         rest = [p for p in ranked if p not in must][: k - len(must)]
         return sorted(must + rest, key=lambda p: -scores.get(p, 0))
 

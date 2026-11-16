@@ -19,6 +19,7 @@ retrieval:
   doc_top_k: 5 # pages kept after document retrieval
   sent_top_k: 5 # sentences returned (FEVER scoring uses at most 5)
   use_title_match: true # exact title matching on capitalized n-grams before BM25
+  title_slots: 3 # guaranteed page slots for title-matched names (issue #28)
   bm25_title_weight: 2.0
   bm25_lead_weight: 1.0
   encoder: sentence-transformers/all-MiniLM-L6-v2
