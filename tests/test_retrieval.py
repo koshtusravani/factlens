@@ -21,7 +21,7 @@ from factlens.retrieval import (
     sent_recall_at_k,
 )
 from factlens.retrieval.bm25 import BM25
-from factlens.retrieval.pairs import pair_row, run_name
+from factlens.retrieval.pairs import pair_row, parse_shard, run_name, shard_bounds
 from factlens.retrieval.store import drop_stray_lines
 from factlens.retrieval.text import title_candidates, title_key, tokenize
 
@@ -331,3 +331,19 @@ def test_run_name():
     assert run_name("bm25", use_title_match=False) == "bm25_notitle"
     assert run_name("hybrid", limit=2000) == "hybrid_n2000"
     assert run_name("bm25", False, 2000) == "bm25_notitle_n2000"
+    assert run_name("hybrid", shard=(2, 4)) == "hybrid_shard2of4"
+
+
+def test_shards_cover_every_row_once():
+    for n_items in (0, 1, 7, 145_449):
+        for n in (1, 3, 4):
+            bounds = [shard_bounds(n_items, (i, n)) for i in range(1, n + 1)]
+            assert bounds[0][0] == 0 and bounds[-1][1] == n_items
+            assert all(a[1] == b[0] for a, b in zip(bounds, bounds[1:], strict=False))
+
+
+def test_parse_shard():
+    assert parse_shard("2/4") == (2, 4)
+    for bad in ("0/4", "5/4", "2", "a/b"):
+        with pytest.raises(ValueError):
+            parse_shard(bad)
