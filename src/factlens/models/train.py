@@ -51,9 +51,11 @@ def train(train_pairs: list[dict], val_pairs: list[dict], output_dir: str, cfg: 
     base = base or m["base"]
     set_seed(m["seed"])
     tokenizer = AutoTokenizer.from_pretrained(base)
+    # transformers 5 keeps the checkpoint dtype by default; fp32 weights are required for fp16 mixed precision.
     model = AutoModelForSequenceClassification.from_pretrained(
         base, num_labels=len(LABELS), id2label=ID2LABEL, label2id=LABEL2ID,
         ignore_mismatched_sizes=True,  # Allows starting from an NLI head with different labels.
+        dtype=torch.float32,
     )
     weights = torch.tensor(class_weights(train_pairs), dtype=torch.float) if use_class_weights else None
     # transformers 5 removed warmup_ratio, so the ratio is converted to a step count.

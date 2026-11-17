@@ -17,7 +17,9 @@ class Verifier:
         self.torch = torch
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        self.model = AutoModelForSequenceClassification.from_pretrained(model_path).to(self.device).eval()
+        self.model = AutoModelForSequenceClassification.from_pretrained(
+            model_path, dtype=torch.float32
+        ).to(self.device).eval()
         self.mode = mode
         self.max_length = max_length
         cfg_map = getattr(self.model.config, "id2label", None) or {}
