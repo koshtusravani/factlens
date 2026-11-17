@@ -9,7 +9,7 @@ All numbers are on the test split (labeled shared-task dev, 19,998 claims) unles
 | R0  | BM25 only, no title match | BM25 in pool                             | 0.496 (val) | 0.429 (val) | Ablation, val 2000                   |
 | R1  | Title match plus BM25     | BM25 in pool                             | 0.818   | 0.677    | CPU baseline, after #28; val 2000: 0.804 / 0.639 |
 | R2  | Title match plus BM25     | Dense (MiniLM)                           | 0.804 (val) | 0.701 (val) | val 2000                             |
-| R3  | Title match plus BM25     | Hybrid                                   | 0.804 (val) | 0.709 (val) | val 2000, alpha 0.5; best sentence ranker |
+| R3  | Title match plus BM25     | Hybrid                                   | 0.818   | 0.748    | alpha 0.5, best sentence ranker; val 2000: 0.804 / 0.709 |
 | R4  | None                      | FAISS dense-only on subcorpus (val 2000) |         |          | Compare with R1 to R3 on the same claims |
 
 sent R@5 is the ceiling on FEVER score for SUPPORTS and REFUTES claims.
