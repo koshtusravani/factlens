@@ -7,6 +7,7 @@ The best checkpoint by validation macro F1 is kept.
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 
 from factlens.labels import ID2LABEL, LABEL2ID, LABELS
@@ -55,6 +56,10 @@ def train(train_pairs: list[dict], val_pairs: list[dict], output_dir: str, cfg: 
         ignore_mismatched_sizes=True,  # Allows starting from an NLI head with different labels.
     )
     weights = torch.tensor(class_weights(train_pairs), dtype=torch.float) if use_class_weights else None
+    # transformers 5 removed warmup_ratio, so the ratio is converted to a step count.
+    n_devices = max(torch.cuda.device_count(), 1)
+    steps_per_epoch = math.ceil(len(train_pairs) / (m["batch_size"] * n_devices))
+    warmup_steps = int(m["warmup_ratio"] * steps_per_epoch * m["epochs"])
 
     class WeightedTrainer(Trainer):
         """Applies optional class weights. The kwargs absorb arguments added in newer versions."""
@@ -78,7 +83,7 @@ def train(train_pairs: list[dict], val_pairs: list[dict], output_dir: str, cfg: 
         learning_rate=m["lr"],
         per_device_train_batch_size=m["batch_size"],
         per_device_eval_batch_size=m["batch_size"] * 2,
-        warmup_ratio=m["warmup_ratio"],
+        warmup_steps=warmup_steps,
         weight_decay=m["weight_decay"],
         eval_strategy="epoch",
         save_strategy="epoch",
