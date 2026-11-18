@@ -69,3 +69,22 @@ def build_gold_pairs(claims: list[Claim], store: WikiStore, retriever: Retriever
         else:
             pairs.append(pair)
     return pairs, skipped
+
+def match_nei_evidence_counts(pairs: list[dict], seed: int) -> list[dict]:
+    """Truncates NEI evidence so its sentence counts follow the gold evidence count distribution.
+
+    Gold evidence for SUPPORTS and REFUTES usually has one or two sentences, while sampled NEI
+    evidence always has num_sentences, so without matching a model can detect NEI from evidence
+    length alone. Each NEI pair keeps its top k sentences, where k is drawn from the gold counts
+    in the same file with a per-claim generator, random.Random(seed + claim id).
+    """
+    gold_counts = [len(p["evidence"]) for p in pairs if p["evidence_source"] == "gold" and p["evidence"]]
+    if not gold_counts:
+        raise ValueError("No gold pairs with evidence to match against")
+    out = []
+    for p in pairs:
+        if p["evidence_source"].startswith("nei_"):
+            k = random.Random(seed + p["id"]).choice(gold_counts)
+            p = {**p, "evidence": p["evidence"][:k]}
+        out.append(p)
+    return out

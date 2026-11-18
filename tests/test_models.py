@@ -6,7 +6,8 @@ import pytest
 
 from factlens.labels import LABELS
 from factlens.models.baseline import TfidfBaseline
-from factlens.models.inputs import build_gold_pairs, evidence_text, model_inputs
+from factlens.models.inputs import (build_gold_pairs, evidence_text, match_nei_evidence_counts,
+                                    model_inputs)
 from factlens.retrieval import Retriever, WikiStore, build_wiki_db
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -63,3 +64,11 @@ def test_tfidf_baseline_fits_and_predicts(claims, store, retriever):
         assert len(preds) == len(pairs) and set(preds) <= set(LABELS)
     assert set(model.top_claim_features(3)) == set(LABELS)
     assert "Paris" in evidence_text(pairs[0]["evidence"])
+
+def test_matched_nei_counts_follow_gold_distribution(claims, store, retriever):
+    pairs, _ = build_gold_pairs(claims, store, retriever, "retrieved", 5, seed=42)
+    matched = match_nei_evidence_counts(pairs, seed=42)
+    gold_counts = {len(p["evidence"]) for p in pairs if p["evidence_source"] == "gold"}
+    nei = [p for p in matched if p["evidence_source"] == "nei_retrieved"]
+    assert nei and all(len(p["evidence"]) in gold_counts for p in nei)
+    assert matched == match_nei_evidence_counts(pairs, seed=42)
