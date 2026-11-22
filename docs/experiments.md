@@ -56,6 +56,15 @@ NEI evidence; the hybrid default from PR 32 applies only if pairs are rebuilt.
 6. Retrieval is the remaining bottleneck. Title matching lifts doc R@5 from 0.496 to 0.804, and
    hybrid ranking adds +1.9 FEVER over bm25 at the classifier level (TF-IDF E3), but E7 still
    reaches FEVER 0.634 against a retrieval ceiling of about 0.83.
+7. Error analysis (E7 on retrieved evidence, 4,940 errors; random sample of 30, seed 42).
+   By confusion: NEI predicted as a verdict 52% (NEI to SUPPORTS 32%), REFUTES to NEI 23%,
+   REFUTES to SUPPORTS 12%. Retrieval misses (gold evidence not in the top 5) are 20% of errors.
+   Manual categories in the sample: label noise 12, NEI confusion 8, retrieval miss 7, numbers or
+   dates 1, polarity 1, other 1. In 12 of the 14 sampled NEI errors the retrieved evidence does
+   decide the claim (for example, Basquiat "died of a heroin overdose" for a cocaine claim), so
+   FEVER NEI labels understate E7. Remaining model errors need closed-world or temporal
+   inference ("used in Switzerland and Liechtenstein" implies not Finland). Retrieval misses
+   come from misspelled names, disambiguation pages, and missing date sentences.
 
 ## Limitations
 
