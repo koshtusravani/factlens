@@ -6,14 +6,16 @@ to gold (scripts/04b) unless stated otherwise.
 
 ## Retrieval (Trisha)
 
-| ID  | Document stage                       | Sentence stage                | doc R@5 | sent R@5 | Notes                                   |
-| --- | ------------------------------------ | ----------------------------- | ------- | -------- | --------------------------------------- |
-| R0  | BM25 only, no title match            | BM25 in pool                  |         |          | Ablation                                |
-| R1  | Title match plus BM25                | BM25 in pool                  |         | 0.677    | CPU baseline                            |
-| R3  | Title match plus BM25 (with #28 fix) | Hybrid                        | 0.818   | 0.748    | Chosen mode; train split: 0.814 / 0.727 |
-| R4  | None                                 | FAISS dense-only on subcorpus |         |          | Not run yet                             |
+| ID  | Document stage            | Sentence stage                           | doc R@5     | sent R@5    | Notes                                                                 |
+| --- | ------------------------- | ---------------------------------------- | ----------- | ----------- | --------------------------------------------------------------------- |
+| R0  | BM25 only, no title match | BM25 in pool                             | 0.496 (val) | 0.429 (val) | Ablation, val 2000                                                    |
+| R1  | Title match plus BM25     | BM25 in pool                             | 0.818       | 0.677       | CPU baseline, after #28; val 2000: 0.804 / 0.639                      |
+| R2  | Title match plus BM25     | Dense (MiniLM)                           | 0.804 (val) | 0.701 (val) | val 2000                                                              |
+| R3  | Title match plus BM25     | Hybrid                                   | 0.818       | 0.748       | alpha 0.5, chosen mode; val 2000: 0.804 / 0.709; train: 0.814 / 0.727 |
+| R4  | None                      | FAISS dense-only on subcorpus (val 2000) |             |             | In progress                                                           |
 
-sent R@5 caps the FEVER score: with 0.748, the best possible FEVER score is about 0.83.
+Title matching raises doc R@5 on val 2000 from 0.496 to 0.804. sent R@5 caps the FEVER score:
+with 0.748, the best possible FEVER score is about 0.83.
 
 ## Verification (Sravani)
 
@@ -32,7 +34,8 @@ sent R@5 caps the FEVER score: with 0.748, the best possible FEVER score is abou
 | E9  | Symmetric FEVER             |                             |                    |       |          | Not run yet    |
 
 DeBERTa runs: 2 epochs, lr 2e-5, batch 32 per device, 2x T4 on Kaggle. Models on the Hugging
-Face Hub: sravanikoshtu/factlens-e4, factlens-e5-matched, factlens-e7.
+Face Hub: sravanikoshtu/factlens-e4, factlens-e5-matched, factlens-e7. All pair files used bm25
+NEI evidence; the hybrid default from PR 32 applies only if pairs are rebuilt.
 
 ## Findings
 
@@ -50,8 +53,9 @@ Face Hub: sravanikoshtu/factlens-e4, factlens-e5-matched, factlens-e7.
    DeBERTa E6: acc 0.426, below claim only).
 5. Training on retrieved evidence fixes the source leak. E7 improves over E6 by +32.7 accuracy
    and +22.0 FEVER on retrieved evidence, and loses only 1 point on gold (0.871 versus 0.881).
-6. Retrieval is the remaining bottleneck. E7 reaches FEVER 0.634 against a retrieval ceiling of
-   about 0.83. Hybrid ranking adds +1.9 FEVER over bm25 at the classifier level (TF-IDF E3).
+6. Retrieval is the remaining bottleneck. Title matching lifts doc R@5 from 0.496 to 0.804, and
+   hybrid ranking adds +1.9 FEVER over bm25 at the classifier level (TF-IDF E3), but E7 still
+   reaches FEVER 0.634 against a retrieval ceiling of about 0.83.
 
 ## Limitations
 

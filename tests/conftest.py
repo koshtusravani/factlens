@@ -21,4 +21,7 @@ def claims():
 
 @pytest.fixture(scope="session")
 def cfg():
-    return load_config()
+    c = load_config()
+    # CI has no sentence-transformers, so tests rank sentences with BM25
+    c["retrieval"]["sent_ranker"] = "bm25"
+    return c
