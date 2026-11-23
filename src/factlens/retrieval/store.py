@@ -213,6 +213,17 @@ class WikiStore:
         ).fetchone()
         return row[0] if row else None
 
+    def random_pages(self, n: int, rng: random.Random) -> list[str]:
+        """n random page ids from the whole dump."""
+        max_id = self.con.execute("SELECT MAX(rowid) FROM pages").fetchone()[0] or 0
+        picks = rng.sample(range(1, max_id + 1), min(n, max_id))
+        out = []
+        for rid in picks:
+            row = self.con.execute("SELECT id FROM pages WHERE rowid = ?", (rid,)).fetchone()
+            if row:
+                out.append(row[0])
+        return out
+
     def random_sentences(self, n: int, rng: random.Random) -> list[tuple[str, int, str]]:
         """n random sentences from the whole dump, as (page_id, line, text)."""
         max_id = self.con.execute("SELECT MAX(rowid) FROM sentences").fetchone()[0] or 0

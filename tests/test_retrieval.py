@@ -347,3 +347,24 @@ def test_parse_shard():
     for bad in ("0/4", "5/4", "2", "a/b"):
         with pytest.raises(ValueError):
             parse_shard(bad)
+
+
+def test_random_pages_are_real_and_seeded(store):
+    pages = store.random_pages(3, random.Random(0))
+    assert len(pages) == 3 and all(store.sentences(p) for p in pages)
+    assert pages == store.random_pages(3, random.Random(0))
+
+
+def test_faiss_index_finds_gold_sentences(store, claims):
+    pytest.importorskip("faiss")  # not installed in CI
+    from factlens.retrieval.dense_index import DenseIndex, subcorpus_pages
+
+    pages = subcorpus_pages(claims, store, extra_pages=["Paris"], n_random=0)
+    gold = {pid for c in claims for s in c.evidence_sets for pid, _ in s}
+    assert gold <= set(pages) and "Paris" in pages
+
+    index = DenseIndex.build(store, pages, fake_encoder)
+    page, line, text = index.rows[0]
+    (res,) = index.search([text], fake_encoder, doc_k=2, sent_k=3)
+    assert res.sentences[0].key == (page, line)
+    assert len(res.sentences) == 3 and len(res.pages) == len(set(res.pages)) <= 2

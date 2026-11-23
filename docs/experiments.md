@@ -12,10 +12,15 @@ to gold (scripts/04b) unless stated otherwise.
 | R1  | Title match plus BM25     | BM25 in pool                             | 0.818       | 0.677       | CPU baseline, after #28; val 2000: 0.804 / 0.639                      |
 | R2  | Title match plus BM25     | Dense (MiniLM)                           | 0.804 (val) | 0.701 (val) | val 2000                                                              |
 | R3  | Title match plus BM25     | Hybrid                                   | 0.818       | 0.748       | alpha 0.5, chosen mode; val 2000: 0.804 / 0.709; train: 0.814 / 0.727 |
-| R4  | None                      | FAISS dense-only on subcorpus (val 2000) |             |             | In progress                                                           |
+| R4  | None                      | FAISS dense-only on subcorpus (val 2000) | 0.893 (val) | 0.758 (val) | 208k pages, 985k sentences; with 20k random pages: 0.920 / 0.774      |
 
 Title matching raises doc R@5 on val 2000 from 0.496 to 0.804. sent R@5 caps the FEVER score:
 with 0.748, the best possible FEVER score is about 0.83.
+
+R4 (scripts/08) searches a subcorpus, not the full 5.4M pages: the gold pages of the val 2000
+claims, the pages R3 retrieved for them, and 200k random pages. Because the gold pages are always
+in it, R4 is not a like-for-like win over R3. What it shows is that dense sentence search ranks
+evidence well: growing the corpus 7x (28.5k to 208k pages) costs only 2.7 points of doc R@5.
 
 ## Verification (Sravani)
 
