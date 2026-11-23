@@ -35,8 +35,9 @@ of fine-tuned transformers for claim verification, beyond what claim wording alo
 | 9    | 09_eval_symmetric.py        | Sravani | Symmetric FEVER robustness                     |
 | 10   | 10_results_table.py         | Shared  | outputs/results.md                             |
 
-App:
+App (downloads the E7 model once, then runs fully offline on CPU):
 
+    hf download sravanikoshtu/factlens-e7 --local-dir checkpoints/factlens-e7
     streamlit run app/streamlit_app.py
 
 ## Design decisions

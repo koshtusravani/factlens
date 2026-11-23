@@ -44,4 +44,4 @@ model:
   hub_model_id: null # e.g. koshtusravani/factlens-deberta-v3-small
 
 app:
-  model_path: checkpoints/deberta-retrieved # local path or Hugging Face Hub ID
+  model_path: checkpoints/factlens-e7 # local path or Hugging Face Hub ID
